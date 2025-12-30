@@ -1,0 +1,24 @@
+# Environment variables
+.env
+*.env
+!.env.example
+
+# n8n data
+.n8n/
+n8n_data/
+
+# Docker volumes
+latex_build/
+
+# Logs
+*.log
+logs/
+
+# Credentials (never commit)
+credentials.json
+secrets/
+*_credentials.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,17 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PROTOCOL=http
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://nena-unlabored-dinah.ngrok-free.dev
+      - N8N_EDITOR_BASE_URL=http://localhost:5678
+      # optional but often needed when behind tunnels/proxies:
+      # - N8N_PROXY_HOPS=1
+volumes:
+  n8n_data:

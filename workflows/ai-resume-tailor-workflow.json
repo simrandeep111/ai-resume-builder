@@ -1,0 +1,1318 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "35decde7-0ea7-4367-a105-790ef6ba4386",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3568,
+        -16
+      ],
+      "id": "97619fac-4e88-49f5-b368-fdce273b8122",
+      "name": "1. Webhook Trigger",
+      "webhookId": "35decde7-0ea7-4367-a105-790ef6ba4386"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "209d368d-0a78-4c58-aa1b-e033865db91a",
+              "leftValue": "={{ $json.body.data.fields[1].label }}",
+              "rightValue": "=={{ ($json.body.data.fields[1].value ?? '').toString().trim() }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "119eb404-8f46-45f5-b23f-a8e23742146f",
+              "leftValue": "={{ $json.body.data.fields[0].label }}",
+              "rightValue": "=={{ ($json.body.data.fields[0].value ?? '').toString().trim() }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2912,
+        -16
+      ],
+      "id": "a4c2bdb9-daf6-41e0-a471-fa0e08b943a6",
+      "name": "3. IF: Required fields present?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\":\"Please see the required fields\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -2576,
+        -144
+      ],
+      "id": "e3e291f5-1ccf-4902-97dd-43de194bcc82",
+      "name": "4. ELSE: Respond 400 (Missing Fields)"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.data.fields[0].value[0].url }}\n",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2256,
+        -16
+      ],
+      "id": "38bf36a1-6a6b-4187-b62b-f8e4a7f46f38",
+      "name": "5. Download Resume (File URL)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v2.convertapi.com/convert/docx/to/txt",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Secret",
+              "value": "Api key"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "File",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1920,
+        -16
+      ],
+      "id": "7892854f-0d8a-4005-8896-7ced33e90547",
+      "name": "6. Convert Resume DOCX→TXT"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "resume_text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1584,
+        -16
+      ],
+      "id": "62884953-259a-4f27-b4a1-7294ff4287ee",
+      "name": "7. Extract Resume Text"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"header\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"properties\": {\n        \"name\": { \"type\": \"string\" },\n        \"email\": { \"type\": \"string\" },\n        \"phone\": { \"type\": \"string\" },\n        \"location\": { \"type\": \"string\" },\n        \"links\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n      },\n      \"required\": [\"name\", \"email\", \"phone\", \"location\", \"links\"]\n    },\n    \"summary\": { \"type\": \"string\" },\n    \"skills\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"properties\": {\n        \"languages\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n        \"frameworks\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n        \"tools\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n        \"cloud\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n        \"other\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n      },\n      \"required\": [\"languages\", \"frameworks\", \"tools\", \"cloud\", \"other\"]\n    },\n    \"experience\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"additionalProperties\": false,\n        \"properties\": {\n          \"company\": { \"type\": \"string\" },\n          \"title\": { \"type\": \"string\" },\n          \"location\": { \"type\": \"string\" },\n          \"dates\": { \"type\": \"string\" },\n          \"bullets\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n        },\n        \"required\": [\"company\", \"title\", \"location\", \"dates\", \"bullets\"]\n      }\n    },\n    \"projects\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"additionalProperties\": false,\n        \"properties\": {\n          \"name\": { \"type\": \"string\" },\n          \"tech\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"dates\": { \"type\": \"string\" },\n          \"bullets\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"link\": { \"type\": \"string\" }\n        },\n        \"required\": [\"name\", \"tech\", \"dates\", \"bullets\", \"link\"]\n      }\n    },\n    \"education\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"additionalProperties\": false,\n        \"properties\": {\n          \"school\": { \"type\": \"string\" },\n          \"degree\": { \"type\": \"string\" },\n          \"location\": { \"type\": \"string\" },\n          \"dates\": { \"type\": \"string\" }\n        },\n        \"required\": [\"school\", \"degree\", \"location\", \"dates\"]\n      }\n    }\n  },\n  \"required\": [\"header\", \"summary\", \"skills\", \"experience\", \"projects\", \"education\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1136,
+        512
+      ],
+      "id": "4b3c7721-f86f-41a8-8c58-3527001d7352",
+      "name": "8a. Resume JSON Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1376,
+        544
+      ],
+      "id": "9eb139c1-3cb5-4c37-b340-98013c526592",
+      "name": "8b. Resume Parser LLM",
+      "credentials": {
+        "groqApi": {
+          "id": "VUdGkpzdkKMb7Qws",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract the resume text into the schema. Return ONLY JSON. No rewriting, no optimization.\n\nResume text:\n{{ $json.resume_text }}\n\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a resume parser that extracts structured data from resume text.\n\nOutput rules (strict):\n- Output MUST be a single valid JSON object only (no markdown, no code fences, no commentary).\n- The JSON MUST match this exact top-level structure and ONLY these keys:\n  header, summary, skills, experience, projects, education\n- Do not include any other keys anywhere (additionalProperties is false).\n\nSchema compliance rules:\n- Always include every required key, even if unknown.\n- If unknown/missing:\n  - Use \"\" for strings\n  - Use [] for arrays\n- Arrays must always be arrays (never a string/null):\n  - header.links must be an array of strings (use [] if none)\n  - skills.languages/frameworks/tools/cloud/other must be arrays of strings (use [] if none)\n  - experience/projects/education must be arrays (use [] if none)\n- experience[].bullets and projects[].bullets must always be arrays of strings (use [] if none).\n- projects[].tech must always be an array of strings (use [] if none).\n\nExtraction rules:\n- Do not invent or infer facts (companies, dates, titles, metrics, tools). Only extract what is explicitly in the resume text.\n- Do not rewrite or optimize; just extract into the schema.\n- Keep text as-is (minor cleanup like trimming whitespace is fine).\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1472,
+        256
+      ],
+      "id": "90d1a883-ea65-4e85-aa80-30b247266b2d",
+      "name": "8. AI Resume Parser (JSON)"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"must_have_skills\": [\"\"],\n  \"nice_to_have_skills\": [\"\"],\n  \"tools\": [\"\"],\n  \"responsibilities\": [\"\"],\n  \"keywords\": [\"\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1872,
+        448
+      ],
+      "id": "05c54997-9723-41cb-9659-0857fe51c214",
+      "name": "10a. JD JSON Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        464
+      ],
+      "id": "8c3485fd-362a-436f-918b-2a112047469e",
+      "name": "10b. JD Parser LLM",
+      "credentials": {
+        "groqApi": {
+          "id": "VUdGkpzdkKMb7Qws",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "784c21aa-16a3-49f8-a8c6-90d6257fe716",
+              "name": "job_description",
+              "value": "={{ $json.body.data.fields[1].value }}",
+              "type": "string"
+            },
+            {
+              "id": "b1d668ef-4ab7-4544-bd73-fcdb35766de9",
+              "name": "resume_file_url",
+              "value": "={{ $json.body.data.fields[0].value[0].url }}",
+              "type": "string"
+            },
+            {
+              "id": "acd3fe7b-ce51-4e15-a70e-bad901b2e49b",
+              "name": "recipient_email",
+              "value": "={{ $json.body.data.fields[2].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3232,
+        -16
+      ],
+      "id": "30fdc687-346f-4478-b110-e18887ffb658",
+      "name": "2. Extract Webhook Data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "395295c8-c38c-434a-a419-c38512fae168",
+              "name": "resume_schema",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "3ecb7c5c-df49-48e1-ae89-4ce60a2c2f90",
+              "name": "job_description",
+              "value": "={{ $('2. Extract Webhook Data').first().json.job_description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1712,
+        240
+      ],
+      "id": "b13fa133-39e0-45a0-9d20-6a1b5b622e05",
+      "name": "9. Set Resume Schema + JD Text"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b06e241-c609-44bc-ab9d-e17c61a4c4a5",
+              "name": "jd_schema",
+              "value": "={{ $json.output }}",
+              "type": "object"
+            },
+            {
+              "id": "35bed414-6927-4b90-9b9c-0a79f0f08f82",
+              "name": "resume_text",
+              "value": "={{ $('7. Extract Resume Text').first().json.resume_text }}",
+              "type": "string"
+            },
+            {
+              "id": "9bae3b3c-4536-489a-b54c-5c2f565edc0c",
+              "name": "resume_schema",
+              "value": "={{ $if($('9. Set Resume Schema + JD Text').isExecuted, $('9. Set Resume Schema + JD Text').first().json.resume_schema, {}) }}",
+              "type": "object"
+            },
+            {
+              "id": "0391ae01-3084-45e6-93c1-c50f259c83bb",
+              "name": "job_description",
+              "value": "={{ $('9. Set Resume Schema + JD Text').first().json.job_description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2576,
+        192
+      ],
+      "id": "583a6d60-6d90-4817-a792-edd89b755dec",
+      "name": "11. Set JD Schema + Resume Text"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"tailored_resume_schema\": {\n    \"header\": { \"name\": \"\", \"email\": \"\", \"phone\": \"\", \"location\": \"\", \"links\": [\"\"] },\n    \"summary\": \"\",\n    \"skills\": { \"languages\": [\"\"], \"frameworks\": [\"\"], \"tools\": [\"\"], \"cloud\": [\"\"], \"other\": [\"\"] },\n    \"experience\": [{ \"company\": \"\", \"title\": \"\", \"location\": \"\", \"dates\": \"\", \"bullets\": [\"\"] }],\n    \"projects\": [{ \"name\": \"\", \"tech\": [\"\"], \"dates\": \"\", \"bullets\": [\"\"], \"link\": \"\" }],\n    \"education\": [{ \"school\": \"\", \"degree\": \"\", \"location\": \"\", \"dates\": \"\" }]\n  },\n  \"suggested_additions_needing_confirmation\": [\"\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -3440,
+        464
+      ],
+      "id": "2be70a97-2dca-40a3-b23d-3b11895c1bf6",
+      "name": "14a. Tailor Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -3712,
+        464
+      ],
+      "id": "05745bfe-f632-453a-849f-233d1ada8c72",
+      "name": "14b. Tailor LLM",
+      "credentials": {
+        "groqApi": {
+          "id": "VUdGkpzdkKMb7Qws",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e97ab0cd-9a65-4d5e-8de2-07c5e2f548b1",
+              "name": "resume_schema",
+              "value": "={{ $('9. Set Resume Schema + JD Text').first().json.resume_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "3c6e0852-37fc-468e-9bb3-fd8966881dc4",
+              "name": "jd_schema",
+              "value": "={{ $('11. Set JD Schema + Resume Text').first().json.jd_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "c9a1d284-7c90-4fa8-9f1a-8c84f988840e",
+              "name": "resume_text",
+              "value": "={{ $('11. Set JD Schema + Resume Text').first().json.resume_text }}\n",
+              "type": "string"
+            },
+            {
+              "id": "cea88ccc-f4b7-459a-b080-c224c3d70e57",
+              "name": "job_description",
+              "value": "={{ $('11. Set JD Schema + Resume Text').first().json.job_description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2816,
+        192
+      ],
+      "id": "6cc26b45-0d9d-4f8f-b2d4-37f2e4677c6b",
+      "name": "12. Prepare Inputs (Scoring + Tailor)"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"score_before\": { \"type\": \"number\" },\n    \"score_after\": { \"type\": \"number\" },\n    \"improvement\": { \"type\": \"number\" },\n    \"present_keywords\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"missing_keywords\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"score_breakdown\": {\n      \"type\": \"object\",\n      \"additionalProperties\": false,\n      \"properties\": {\n        \"skills\": { \"type\": \"number\" },\n        \"experience\": { \"type\": \"number\" },\n        \"tools\": { \"type\": \"number\" }\n      },\n      \"required\": [\"skills\", \"experience\", \"tools\"]\n    },\n    \"recommendation\": { \"type\": \"string\" }\n  },\n  \"required\": [\n    \"score_before\",\n    \"score_after\",\n    \"improvement\",\n    \"present_keywords\",\n    \"missing_keywords\",\n    \"score_breakdown\",\n    \"recommendation\"\n  ]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -2736,
+        752
+      ],
+      "id": "0c12ca58-9207-42f9-adc1-d3ca2c0bdc23",
+      "name": "17a. Final Score Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -3056,
+        752
+      ],
+      "id": "293644f1-44aa-471d-a499-4da60a73a9d0",
+      "name": "17b. Final Scorer LLM",
+      "credentials": {
+        "groqApi": {
+          "id": "VUdGkpzdkKMb7Qws",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -3200,
+        416
+      ],
+      "id": "c6c481da-0628-46ec-8c8c-9285785bf352",
+      "name": "13b. Original Scorer LLM",
+      "credentials": {
+        "groqApi": {
+          "id": "VUdGkpzdkKMb7Qws",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Calculate ATS match score AFTER tailoring, and compare it to the score BEFORE tailoring.\n\nINPUTS:\nJob description:\n{{ $json.job_description || $('12. Prepare Inputs (Scoring + Tailor)').first().json.job_description }}\n\nJob keywords (TECH ONLY):\n{{ JSON.stringify($json.jd_schema?.keywords || $('12. Prepare Inputs (Scoring + Tailor)').first().json.jd_schema?.keywords || []) }}\n\nTailored resume JSON:\n{{ JSON.stringify($json.tailored_resume_schema || {}) }}\n\nScore BEFORE (from earlier scoring agent):\n{{ $json.score_before ?? 0 }}\n\nRules:\n1) Compute score_after (0–100) based on technical keyword overlap + semantic fit (tools/languages/cloud are highest weight).\n2) Use Job keywords as the ONLY keyword source (do not invent new keywords).\n3) present_keywords / missing_keywords must be based on Job keywords.\n4) If score_before.match_score exists, set:\n   improvement = score_after - score_before.match_score\n   Otherwise improvement = 0.\n5) Penalize missing must-have keywords heavily; nice-to-have lightly.\n6) Return ONLY valid JSON. No extra text.\n\nReturn ONLY this JSON:\n{\n  \"score_before\": 0,\n  \"score_after\": 0,\n  \"improvement\": 0,\n  \"present_keywords\": [\"\"],\n  \"missing_keywords\": [\"\"],\n  \"score_breakdown\": {\n    \"skills\": 0,\n    \"experience\": 0,\n    \"tools\": 0\n  },\n  \"recommendation\": \"\"\n}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an ATS match-scoring assistant.\n\nRules:\n- Output valid JSON only. No markdown, no extra text.\n- Follow the provided JSON schema exactly (types, required keys).\n- Do not invent skills or keywords. Use only the job keywords provided in the input for present/missing lists.\n- Score must be 0–100. Use consistent reasoning based on keyword overlap + relevance to job description.\n- Present/missing keywords must be deduped and derived from job keywords only.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -2912,
+        544
+      ],
+      "id": "81e9a2c6-943d-4e0a-8ed0-3380638cffb0",
+      "name": "17. AI Score Tailored Resume"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Update the resume JSON to better match the job_description.\n\nYou should add between 70% to 85% of the missing_keywords into the resume in these places:\n1) skills.* arrays (languages/frameworks/tools/cloud/other) by categorizing each keyword.\n2) projects[].tech arrays (add relevant keywords here too).\n3) experience[].bullets and projects[].bullets (rewrite bullets to include keywords; you may add up to 2 new bullets per experience entry and 2 per project if needed to fit remaining keywords).\n\nRules:\n- You may modify ONLY: skills, experience[].bullets, projects[].bullets, projects[].tech.\n- Do not change any other fields.\n- Prioritize the most relevant and important keywords from the missing list.\n- Add keywords naturally without overstuffing.\n\nJob description:\n{{ $json.job_description || $('12. Prepare Inputs (Scoring + Tailor)').first().json.job_description }}\n\nMissing keywords (add 70-85% of these somewhere in skills/projects/experience):\n{{ JSON.stringify($json.missing_keywords ?? $('12. Prepare Inputs (Scoring + Tailor)').first().json.missing_keywords ?? []) }}\n\nResume JSON (use tailored version if rejection loop, otherwise original):\n{{ JSON.stringify($json.tailored_resume_schema ?? $('12. Prepare Inputs (Scoring + Tailor)').first().json.resume_schema ?? {}) }}\n\nReturn ONLY JSON with:\ntailored_resume_schema (same resume schema),\nsuggested_additions_needing_confirmation (string array; leave [] unless a keyword cannot be placed anywhere).\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an ATS resume tailoring assistant.\n\nRules:\n- Output valid JSON only. No markdown, no extra text.\n- Keep the exact same JSON structure and keys as the input schema.\n- You are allowed to change ONLY:\n  - skills (languages/frameworks/tools/cloud/other arrays)\n  - experience[].bullets\n  - projects[].bullets\n  - projects[].tech\n- You should place between 70% to 85% of the missing keywords somewhere in the output:\n  - Prioritize the most relevant keywords that align with the job description\n  - Prefer skills + projects[].tech first for clean ATS matching\n  - Also weave keywords into bullets where it reads naturally\n  - Skip less relevant or redundant keywords to keep the resume authentic\n- You may add up to 2 new bullets per experience entry and up to 2 new bullets per project if needed.\n- Keep bullets concise and ATS-friendly.\n- Set suggested_additions_needing_confirmation to [] unless a keyword truly cannot fit anywhere.\n- CRITICAL: All projects MUST include the 'link' field. Copy it exactly from the input resume."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -3648,
+        160
+      ],
+      "id": "18037af4-b583-429b-bf04-a826b106a80b",
+      "name": "14. AI Tailor Resume Bullets"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"match_score\": { \"type\": \"number\" },\n    \"match_score_v2\": { \"type\": \"number\" },\n    \"present_keywords\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"missing_keywords\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"score_breakdown\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"skills\": { \"type\": \"number\" },\n        \"experience\": { \"type\": \"number\" },\n        \"tools\": { \"type\": \"number\" }\n      }\n    },\n    \"recommendation\": { \"type\": \"string\" }\n  },\n  \"required\": [\"match_score\", \"present_keywords\", \"missing_keywords\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -2944,
+        400
+      ],
+      "id": "37dcd32c-5da7-41c1-89ba-84b0ad69204b",
+      "name": "13a. Original Score Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Calculate ATS match score between ORIGINAL resume and job description.\n\nJob description:\n{{ $json.job_description }}\n\nJob keywords:\n{{ JSON.stringify($json.jd_schema?.keywords || []) }}\n\nResume (original JSON):\n{{ JSON.stringify($json.resume_schema || {}) }}\n\nReturn ONLY JSON:\n{\n  \"match_score\": 0,\n  \"present_keywords\": [\"\"],\n  \"missing_keywords\": [\"\"],\n  \"recommendation\": \"\"\n}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an ATS match-scoring assistant.\n\nRules:\n- Output valid JSON only. No markdown, no extra text.\n- Follow the required JSON keys exactly: match_score, present_keywords, missing_keywords, recommendation.\n- Do not invent skills/keywords. present_keywords and missing_keywords must come only from the provided Job keywords.\n- match_score must be a number from 0 to 100.\n- Use \"\" or [] only when required by the schema, but prefer real values when present in inputs."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -3168,
+        160
+      ],
+      "id": "ecc5b7ec-7d22-4df6-83ed-6941382f8000",
+      "name": "13. AI Score Original Resume"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe87e68b-05cf-4c9a-9805-7ec83ce0afe5",
+              "name": "tailored_resume_schema",
+              "value": "={{ $json.output.tailored_resume_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "3899947b-1ace-4f7d-9e91-f549085470dd",
+              "name": "suggested_additions_needing_confirmation",
+              "value": "={{ $json.output.suggested_additions_needing_confirmation }}",
+              "type": "array"
+            },
+            {
+              "id": "bdc76d8b-24f6-48da-9c45-628f4822101f",
+              "name": "job_description",
+              "value": "={{ $('12. Prepare Inputs (Scoring + Tailor)').first().json.job_description }}\n",
+              "type": "string"
+            },
+            {
+              "id": "72af6a86-6ac4-4191-b059-7054c59e2a56",
+              "name": "resume_text",
+              "value": "={{ $('7. Extract Resume Text').first().json.resume_text }}",
+              "type": "string"
+            },
+            {
+              "id": "028550db-44fa-4deb-a715-5b690f8ee08a",
+              "name": "jd_schema",
+              "value": "={{ $('11. Set JD Schema + Resume Text').first().json.jd_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "9a32a000-257f-4f28-a51e-d451dc390c1c",
+              "name": "score_before",
+              "value": "={{ $('13. AI Score Original Resume').first().json.output.match_score }}",
+              "type": "number"
+            },
+            {
+              "id": "615af4e9-80c0-4566-ab53-54af328b4fe7",
+              "name": "resume_schema",
+              "value": "={{ $('9. Set Resume Schema + JD Text').item.json.resume_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "cb6b9784-3be4-46b2-9d34-9225a4fecf2c",
+              "name": "missing_keywords",
+              "value": "={{ $('13. AI Score Original Resume').item.json.output.missing_keywords }}",
+              "type": "array"
+            },
+            {
+              "id": "80c4ccd5-ae9a-45ae-b8aa-f66bbe5183be",
+              "name": "score_before",
+              "value": "={{ $('13. AI Score Original Resume').item.json.output.match_score }}",
+              "type": "number"
+            },
+            {
+              "id": "0b7cb8ea-a907-4c9b-a2c0-2e3db458d82c",
+              "name": "tailored_resume_text",
+              "value": "={{ $json.tailored_resume_text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3232,
+        544
+      ],
+      "id": "1b4c8e6e-b832-458a-95f9-b5e277ba73fd",
+      "name": "16. Prepare Inputs (Final Score + Approval)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract ONLY TECHNICAL keywords from the job description and return JSON only.\n\nRules:\n- Output must be valid JSON only.\n- Keywords must be a deduped list of single terms or short phrases (1–3 words).\n- Include ONLY hard skills: programming languages, databases, data tools, cloud services, platforms, frameworks, orchestration, streaming/big-data tech, testing/CI/CD tools.\n- EXCLUDE soft skills and generic phrases (e.g., “strong communication”, “hands-on”, “experience”, “end-to-end”, “nice to have”, “degree”).\n- Prefer exact vendor/tool names and standard terms as written in the JD.\n\nJob description:\n{{ $json.job_description }}\n\nReturn ONLY JSON with keys:\nmust_have_skills, nice_to_have_skills, tools, responsibilities, keywords\n- keywords must contain ONLY technical/hard-skill terms.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a job description parser.\n\nRules:\n- Output valid JSON only. No markdown, no extra text.\n- Follow the provided JSON schema exactly.\n- Extract ONLY technical / hard-skill terms explicitly present in the job description.\n  Examples: languages, databases, cloud platforms/services, frameworks, orchestration tools, big-data/streaming tools, CI/CD/testing tools.\n- Exclude soft skills and generic phrases (e.g., “strong communication”, “hands-on”, “end-to-end”, “bachelor’s degree”).\n- Do not invent tools/skills. If none found, return [] for keywords.\n- Keep keywords deduped and normalized (no duplicates, 1–3 word phrases).\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -2208,
+        160
+      ],
+      "id": "e860377d-5eca-4268-b801-f5627c9b5ce7",
+      "name": "10. AI JD Keyword Extractor"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resume = $json.tailored_resume_schema;\n\nlet text = \"\";\n\n// Header\nif (resume.header) {\n  text += `${resume.header.name}\\n`;\n  text += `${resume.header.email} | ${resume.header.phone} | ${resume.header.location}\\n`;\n  if (resume.header.links && resume.header.links.length) {\n    text += resume.header.links.join(\" | \") + \"\\n\";\n  }\n  text += \"\\n\";\n}\n\n// Summary\nif (resume.summary) {\n  text += `PROFESSIONAL SUMMARY\\n${resume.summary}\\n\\n`;\n}\n\n// Skills\nif (resume.skills) {\n  text += \"SKILLS\\n\";\n  if (resume.skills.languages && resume.skills.languages.length) {\n    text += `Languages: ${resume.skills.languages.join(\", \")}\\n`;\n  }\n  if (resume.skills.frameworks && resume.skills.frameworks.length) {\n    text += `Frameworks: ${resume.skills.frameworks.join(\", \")}\\n`;\n  }\n  if (resume.skills.tools && resume.skills.tools.length) {\n    text += `Tools: ${resume.skills.tools.join(\", \")}\\n`;\n  }\n  if (resume.skills.cloud && resume.skills.cloud.length) {\n    text += `Cloud: ${resume.skills.cloud.join(\", \")}\\n`;\n  }\n  if (resume.skills.other && resume.skills.other.length) {\n    text += `Other: ${resume.skills.other.join(\", \")}\\n`;\n  }\n  text += \"\\n\";\n}\n\n// Experience\nif (resume.experience && resume.experience.length) {\n  text += \"EXPERIENCE\\n\";\n  resume.experience.forEach(job => {\n    text += `${job.title}\\n${job.company} | ${job.location}\\n${job.dates}\\n`;\n    if (job.bullets) {\n      job.bullets.forEach(bullet => {\n        text += `• ${bullet}\\n`;\n      });\n    }\n    text += \"\\n\";\n  });\n  text += \"\\n\";\n}\n\n// Projects\nif (resume.projects && resume.projects.length) {\n  text += \"PROJECTS\\n\";\n  resume.projects.forEach(proj => {\n    text += `${proj.name}\\n${proj.dates} | ${proj.tech.join(\", \")}\\n`;\n    if (proj.link) text += `${proj.link}\\n`;\n    if (proj.bullets) {\n      proj.bullets.forEach(bullet => {\n        text += `• ${bullet}\\n`;\n      });\n    }\n    text += \"\\n\";\n  });\n  text += \"\\n\";\n}\n\n// Education\nif (resume.education && resume.education.length) {\n  text += \"EDUCATION\\n\";\n  resume.education.forEach(edu => {\n    text += `${edu.degree} | ${edu.school}\\n${edu.location} | ${edu.dates}\\n\\n`;\n  });\n}\n\nreturn { resume_text: text };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        832
+      ],
+      "id": "8f07200a-1df5-44d7-bc61-a9e7fd111f63",
+      "name": "22. Build Resume Text (For PDF)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "55c2d71c-921e-4c35-a82d-a559cd913bed",
+              "name": "tailored_resume_schema",
+              "value": "={{ $('16. Prepare Inputs (Final Score + Approval)').item.json.output.tailored_resume_schema }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        544
+      ],
+      "id": "c56c3c7b-dd89-4f96-8724-d4efaaf74c38",
+      "name": "21. THEN: Set Approved Resume Schema"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v2.convertapi.com/convert/txt/to/pdf",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Secret",
+              "value": "Api key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "File",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2256,
+        832
+      ],
+      "id": "dd8430e6-b729-422c-a08e-68938a994322",
+      "name": "24. Convert TXT → PDF"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "resume_text",
+        "options": {
+          "fileName": "tailored_resume.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1920,
+        832
+      ],
+      "id": "5aad04c0-9263-472f-88b8-59ff6384fe09",
+      "name": "23. Text → File (TXT)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $json.Files?.[0];\nif (!f?.FileData) throw new Error('ConvertAPI response missing Files[0].FileData');\n\nconst base64 = f.FileData;\nconst fileName = f.FileName || 'tailored_resume.pdf';\n\nreturn [{\n  json: {\n    ...$json,\n    pdf_file_name: fileName,\n  },\n  binary: {\n    data: {\n      data: base64,\n      fileName,\n      mimeType: 'application/pdf',\n    },\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2576,
+        832
+      ],
+      "id": "398f2905-9977-4813-aca7-127be2c25a54",
+      "name": "25. Decode PDF Base64 → Binary"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('2. Extract Webhook Data').first().json.recipient_email }}",
+        "subject": "Resume PDF",
+        "emailType": "text",
+        "message": "Your Resume",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -2960,
+        848
+      ],
+      "id": "7f776179-9f62-4550-bafd-645fe16c1e9c",
+      "name": "26. THEN: Email PDF to Recipient",
+      "webhookId": "d259a87c-d549-441e-b88d-85b17152fb9d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2VKNV63IZSW5JHZr",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Resume Approval - Convert to PDF?",
+        "formDescription": "=Your tailored resume is ready! Review the details below and approve PDF conversion.\n\nScore Before: {{ $('13. AI Score Original Resume').first().json.output.match_score }}\nScore After: {{ $('17. AI Score Tailored Resume').first().json.output.score_after }}\nImprovement: +{{ $('17. AI Score Tailored Resume').first().json.output.improvement }}%\n\nMissing Keywords: {{ $('17. AI Score Tailored Resume').first().json.output.missing_keywords.join(', ') }}",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Approval Decision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "approve"
+                  },
+                  {
+                    "option": "reject"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2576,
+        544
+      ],
+      "id": "ca9dad87-175c-46ea-bb4c-8b83132265a1",
+      "name": "18. User Approval Form (Wait)",
+      "webhookId": "e930891b-13cd-4853-8813-a549144bc609"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9d6b03b7-2b04-4f41-a593-f0cb264b3203",
+              "leftValue": "={{ $json['Approval Decision'] }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1968,
+        592
+      ],
+      "id": "c86077b5-4dab-4f41-9e9c-d81708353a66",
+      "name": "20. IF: Approved?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "09121045-fbd3-4e1b-94fd-2c85d0815300",
+              "name": "tailored_resume_schema",
+              "value": "={{ $('16. Prepare Inputs (Final Score + Approval)').item.json.tailored_resume_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "41464c57-effc-4b89-8d54-f744820a8c97",
+              "name": "jd_schema",
+              "value": "={{ $('16. Prepare Inputs (Final Score + Approval)').item.json.jd_schema }}",
+              "type": "object"
+            },
+            {
+              "id": "d9f365eb-6321-42ce-b70a-e7034e2d63d8",
+              "name": "job_description",
+              "value": "={{ $('16. Prepare Inputs (Final Score + Approval)').item.json.job_description }}",
+              "type": "string"
+            },
+            {
+              "id": "5ffabaa6-1912-4dbe-bab0-cb8dd8ef5126",
+              "name": "missing_keywords",
+              "value": "={{ $('17. AI Score Tailored Resume').item.json.output.missing_keywords }}",
+              "type": "array"
+            },
+            {
+              "id": "5be8391e-4216-40ea-8a9b-61b74b70ae16",
+              "name": "Approval Decision",
+              "value": "={{ $json['Approval Decision'] }}",
+              "type": "string"
+            },
+            {
+              "id": "4c1c4bcc-b373-408b-a0e3-e6b73e373df8",
+              "name": "tailored_resume_text",
+              "value": "={{ $('16. Prepare Inputs (Final Score + Approval)').item.json.tailored_resume_text }}",
+              "type": "string"
+            },
+            {
+              "id": "1a4d303e-a752-423f-9119-853cb86dc9ec",
+              "name": "score_before",
+              "value": "={{ $('17. AI Score Tailored Resume').item.json.output.score_after }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2256,
+        560
+      ],
+      "id": "c2ddbe3f-9b0a-4a53-b2b7-a82bd20edf3a",
+      "name": "19. Store Loop Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resume = $json.output.tailored_resume_schema;\n\nlet text = \"\";\n\n// Header\nif (resume.header) {\n  text += `${resume.header.name}\\n`;\n  text += `${resume.header.email} | ${resume.header.phone} | ${resume.header.location}\\n`;\n  if (resume.header.links && resume.header.links.length) {\n    text += resume.header.links.join(\" | \") + \"\\n\";\n  }\n  text += \"\\n\";\n}\n\n// Summary\nif (resume.summary) {\n  text += `PROFESSIONAL SUMMARY\\n${resume.summary}\\n\\n`;\n}\n\n// Skills\nif (resume.skills) {\n  text += \"SKILLS\\n\";\n  if (resume.skills.languages && resume.skills.languages.length) {\n    text += `Languages: ${resume.skills.languages.join(\", \")}\\n`;\n  }\n  if (resume.skills.frameworks && resume.skills.frameworks.length) {\n    text += `Frameworks: ${resume.skills.frameworks.join(\", \")}\\n`;\n  }\n  if (resume.skills.tools && resume.skills.tools.length) {\n    text += `Tools: ${resume.skills.tools.join(\", \")}\\n`;\n  }\n  if (resume.skills.cloud && resume.skills.cloud.length) {\n    text += `Cloud: ${resume.skills.cloud.join(\", \")}\\n`;\n  }\n  if (resume.skills.other && resume.skills.other.length) {\n    text += `Other: ${resume.skills.other.join(\", \")}\\n`;\n  }\n  text += \"\\n\";\n}\n\n// Experience\nif (resume.experience && resume.experience.length) {\n  text += \"EXPERIENCE\\n\";\n  resume.experience.forEach(job => {\n    text += `${job.title}\\n${job.company} | ${job.location}\\n${job.dates}\\n`;\n    if (job.bullets) {\n      job.bullets.forEach(bullet => {\n        text += `• ${bullet}\\n`;\n      });\n    }\n    text += \"\\n\";\n  });\n  text += \"\\n\";\n}\n\n// Projects\nif (resume.projects && resume.projects.length) {\n  text += \"PROJECTS\\n\";\n  resume.projects.forEach(proj => {\n    text += `${proj.name}\\n${proj.dates} | ${proj.tech.join(\", \")}\\n`;\n    if (proj.link) text += `${proj.link}\\n`;\n    if (proj.bullets) {\n      proj.bullets.forEach(bullet => {\n        text += `• ${bullet}\\n`;\n      });\n    }\n    text += \"\\n\";\n  });\n  text += \"\\n\";\n}\n\n// Education\nif (resume.education && resume.education.length) {\n  text += \"EDUCATION\\n\";\n  resume.education.forEach(edu => {\n    text += `${edu.degree} | ${edu.school}\\n${edu.location} | ${edu.dates}\\n\\n`;\n  });\n}\n\nreturn { \n  ...$json,\n  tailored_resume_text: text \n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3520,
+        592
+      ],
+      "id": "e7774784-7c4e-4543-9494-f7fcbf12bf96",
+      "name": "Convert Resume to Text"
+    }
+  ],
+  "connections": {
+    "1. Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "2. Extract Webhook Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. IF: Required fields present?": {
+      "main": [
+        [
+          {
+            "node": "4. ELSE: Respond 400 (Missing Fields)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5. Download Resume (File URL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Download Resume (File URL)": {
+      "main": [
+        [
+          {
+            "node": "6. Convert Resume DOCX→TXT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Convert Resume DOCX→TXT": {
+      "main": [
+        [
+          {
+            "node": "7. Extract Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Extract Resume Text": {
+      "main": [
+        [
+          {
+            "node": "8. AI Resume Parser (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8a. Resume JSON Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "8. AI Resume Parser (JSON)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8b. Resume Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "8. AI Resume Parser (JSON)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. AI Resume Parser (JSON)": {
+      "main": [
+        [
+          {
+            "node": "9. Set Resume Schema + JD Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10a. JD JSON Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "10. AI JD Keyword Extractor",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10b. JD Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "10. AI JD Keyword Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Extract Webhook Data": {
+      "main": [
+        [
+          {
+            "node": "3. IF: Required fields present?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Set Resume Schema + JD Text": {
+      "main": [
+        [
+          {
+            "node": "10. AI JD Keyword Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Set JD Schema + Resume Text": {
+      "main": [
+        [
+          {
+            "node": "12. Prepare Inputs (Scoring + Tailor)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14a. Tailor Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "14. AI Tailor Resume Bullets",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14b. Tailor LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "14. AI Tailor Resume Bullets",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12. Prepare Inputs (Scoring + Tailor)": {
+      "main": [
+        [
+          {
+            "node": "13. AI Score Original Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "17a. Final Score Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "17. AI Score Tailored Resume",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "17b. Final Scorer LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "17. AI Score Tailored Resume",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13b. Original Scorer LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "13. AI Score Original Resume",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "17. AI Score Tailored Resume": {
+      "main": [
+        [
+          {
+            "node": "18. User Approval Form (Wait)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14. AI Tailor Resume Bullets": {
+      "main": [
+        [
+          {
+            "node": "Convert Resume to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13a. Original Score Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "13. AI Score Original Resume",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13. AI Score Original Resume": {
+      "main": [
+        [
+          {
+            "node": "14. AI Tailor Resume Bullets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "16. Prepare Inputs (Final Score + Approval)": {
+      "main": [
+        [
+          {
+            "node": "17. AI Score Tailored Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. AI JD Keyword Extractor": {
+      "main": [
+        [
+          {
+            "node": "11. Set JD Schema + Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "22. Build Resume Text (For PDF)": {
+      "main": [
+        [
+          {
+            "node": "23. Text → File (TXT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "21. THEN: Set Approved Resume Schema": {
+      "main": [
+        [
+          {
+            "node": "22. Build Resume Text (For PDF)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "24. Convert TXT → PDF": {
+      "main": [
+        [
+          {
+            "node": "25. Decode PDF Base64 → Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "23. Text → File (TXT)": {
+      "main": [
+        [
+          {
+            "node": "24. Convert TXT → PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "25. Decode PDF Base64 → Binary": {
+      "main": [
+        [
+          {
+            "node": "26. THEN: Email PDF to Recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "18. User Approval Form (Wait)": {
+      "main": [
+        [
+          {
+            "node": "19. Store Loop Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "20. IF: Approved?": {
+      "main": [
+        [
+          {
+            "node": "21. THEN: Set Approved Resume Schema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "14. AI Tailor Resume Bullets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "19. Store Loop Context": {
+      "main": [
+        [
+          {
+            "node": "20. IF: Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Resume to Text": {
+      "main": [
+        [
+          {
+            "node": "16. Prepare Inputs (Final Score + Approval)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "4b6adc62419cf6cbf08df05ef9ea8b6a21df2af50b90f0e2409457642a3d7548"
+  }
+}
